@@ -1,45 +1,70 @@
 const express = require('express');
 const axios = require('axios');
+const cheerio = require('cheerio');
 const app = express();
 
 app.use(express.json());
 
-// Default route to check if the server is running
+// Default route
 app.get('/', (req, res) => {
   res.send('Webhook Server is Live!');
 });
 
-// Webhook endpoint for Dialogflow
+// Function to scrape upcoming hackathons from NoticeBard
+const getUpcomingHackathons = async () => {
+  try {
+    const url = "https://cse.noticebard.com/hackathon/upcoming-hackathon-2025-in-india/";
+    const { data } = await axios.get(url);
+    const $ = cheerio.load(data);
+
+    let hackathons = [];
+
+    // Adjust the selector based on the webpage structure
+    $("h3").each((index, element) => {
+      const title = $(element).text().trim();
+      const link = $(element).find("a").attr("href") || url; // Use the NoticeBard URL if no direct link is found
+      hackathons.push({ title, link });
+    });
+
+    return hackathons.slice(0, 5); // Return top 5 results
+  } catch (error) {
+    console.error("Error scraping hackathons:", error);
+    return [];
+  }
+};
+
+// Webhook endpoint
 app.post('/webhook', async (req, res) => {
   const intentName = req.body.queryResult.intent.displayName;
   const parameters = req.body.queryResult.parameters;
-  const programType = parameters.programType;
+  const programType = parameters.programType; // Extract program type
 
   if (intentName === 'Upcoming Programs') {
-    if (!programType) {
+    if (!programType || programType.toLowerCase() !== "hackathon") {
       return res.json({
-        fulfillmentText: "What type of upcoming program are you looking for? (e.g., hackathons, internships, conferences, coding competitions)",
+        fulfillmentText: "I currently fetch only hackathons. Please specify 'hackathon' for the best results!",
       });
     }
 
     try {
-      const response = await axios.get(`https://cse.noticebard.com/api/upcoming?category=${programType}`);
-      const programs = response.data.programs;
+      const hackathons = await getUpcomingHackathons();
 
-      if (!programs || programs.length === 0) {
+      if (hackathons.length === 0) {
         return res.json({
-          fulfillmentText: `I couldn't find any upcoming ${programType} in 2025. Try a different category.`,
+          fulfillmentText: "I couldn't find any upcoming hackathons in 2025 right now. Try again later.",
         });
       }
 
-      let programList = programs.map(program => `- ${program.name}: ${program.date}`).join('\n');
-      const fulfillmentText = `Here are the upcoming ${programType} events in 2025:\n${programList}`;
+      let responseText = "Here are some upcoming hackathons in 2025:\n";
+      hackathons.forEach((hackathon) => {
+        responseText += `- ${hackathon.title} [More Info](${hackathon.link})\n`;
+      });
 
-      res.json({ fulfillmentText });
+      res.json({ fulfillmentText: responseText });
     } catch (error) {
       console.error('Error fetching programs:', error);
       res.json({
-        fulfillmentText: `Sorry, I couldn’t fetch upcoming ${programType} right now. Please try again later.`,
+        fulfillmentText: "Sorry, I couldn’t fetch upcoming hackathons right now. Please try again later.",
       });
     }
   } else {
