@@ -1,9 +1,34 @@
 const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const mongoose = require('mongoose');
 const app = express();
 
 app.use(express.json());
+
+// ✅ Connect to MongoDB (Replace `<your_mongodb_connection_string>` with actual URL)
+mongoose.connect('<your_mongodb_connection_string>', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('Connected to MongoDB'))
+.catch(err => console.error('MongoDB Connection Error:', err));
+
+// ✅ Define Mongoose Schema & Model
+const seniorSchema = new mongoose.Schema({
+  email: String,
+  fullName: String,
+  startYear: Number,
+  course: String,
+  hasInternship: Boolean,
+  internshipCompany: String,
+  hasFullTimeOffer: Boolean,
+  fullTimeCompany: String,
+  otherExperiences: String
+});
+
+const Senior = mongoose.model('Senior', seniorSchema);
+
 
 // Default route
 app.get('/', (req, res) => {
@@ -39,6 +64,7 @@ app.post('/webhook', async (req, res) => {
   const parameters = req.body.queryResult.parameters;
   const programType = parameters.programType; // Extract program type
 
+  //intent that handles the program datails to be fetched form the web
   if (intentName === 'Upcoming Programs') {
     if (!programType || programType.toLowerCase() !== "hackathon") {
       return res.json({
@@ -70,6 +96,72 @@ app.post('/webhook', async (req, res) => {
   } else {
     res.json({ fulfillmentText: 'Intent not handled.' });
   }
+
+  //intent that handles the requests for connecting with seniors for internship and placement help
+  
+  // if (intentName === "Senior Help") {
+  //   const company = parameters.company;
+  //   const experience = parameters.experience;
+
+  //   console.log(`Searching for seniors from ${company} with experience in ${experience}`);
+
+  //   // Find matching senior profiles
+  //   const filteredSeniors = seniorProfiles.filter(
+  //     senior => senior.company.toLowerCase() === company.toLowerCase() &&
+  //               senior.experience.toLowerCase().includes(experience.toLowerCase())
+  //   );
+
+  //   // Create response
+  //   if (filteredSeniors.length > 0) {
+  //     let responseText = "Here are some seniors who can guide you:\n";
+  //     filteredSeniors.forEach(senior => {
+  //       responseText += `👨‍💻 *${senior.name}* - ${senior.experience} (${senior.year})\n📩 Contact: ${senior.contact}\n\n`;
+  //     });
+
+  //     res.json({ fulfillmentText: responseText });
+  //   } else {
+  //     res.json({ fulfillmentText: `Sorry, no seniors found for ${company} with experience in ${experience}.` });
+  //   }
+  // } else {
+  //   res.json({ fulfillmentText: "Intent not handled." });
+  // }
+
+  if (intentName === "Senior Help") {
+    const company = parameters.company;  // Company the student is asking for
+    const experienceType = parameters.experience_type;  // 'internship' or 'full-time'
+
+    console.log(`Searching for seniors from ${company} with ${experienceType} experience`);
+
+    try {
+      let query = {};
+
+      if (experienceType.toLowerCase() === "internship") {
+        query = { internshipCompany: { $regex: new RegExp(company, "i") } };
+      } else if (experienceType.toLowerCase() === "full-time") {
+        query = { fullTimeCompany: { $regex: new RegExp(company, "i") } };
+      }
+
+      const seniors = await Senior.find(query);
+
+      if (seniors.length > 0) {
+        let responseText = `👨‍💻 Here are seniors with ${experienceType} experience at ${company}:\n\n`;
+
+        seniors.forEach(senior => {
+          responseText += `🔹 *${senior.fullName}* (${senior.course}, Batch ${senior.startYear})\n📩 Contact: ${senior.email}\n\n`;
+        });
+
+        res.json({ fulfillmentText: responseText });
+      } else {
+        res.json({ fulfillmentText: `Sorry, no seniors found for ${company} with ${experienceType} experience.` });
+      }
+    } catch (error) {
+      console.error('Error fetching senior data:', error);
+      res.json({ fulfillmentText: "Sorry, something went wrong while fetching senior details. Please try again later." });
+    }
+  } else {
+    res.json({ fulfillmentText: "Intent not handled." });
+  }
+
 });
 
 // Start server
