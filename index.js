@@ -3,11 +3,12 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const mongoose = require('mongoose');
 const app = express();
+require('dotenv').config();
 
 app.use(express.json());
 
 // ✅ Connect to MongoDB (Replace `<your_mongodb_connection_string>` with actual URL)
-mongoose.connect('<your_mongodb_connection_string>', {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
