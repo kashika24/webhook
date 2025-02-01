@@ -210,7 +210,7 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// ✅ Define Mongoose Schema & Model
+// ✅ Define Schema & Model
 const SeniorSchema = new mongoose.Schema({
   email: String,
   fullName: String,
@@ -227,15 +227,14 @@ const Senior = mongoose.model('Senior', SeniorSchema);
 
 // ✅ Webhook Route
 app.post('/webhook', async (req, res) => {
-  const intentName = req.body.queryResult.intent.displayName;
-  const parameters = req.body.queryResult.parameters;
   console.log('🔹 Full Webhook Request:', JSON.stringify(req.body, null, 2));
 
+  const intentName = req.body.queryResult.intent.displayName;
+  const parameters = req.body.queryResult.parameters;
 
   console.log(`🔹 Intent Received: ${intentName}`);
   console.log(`🔹 Parameters Received:`, parameters);
 
-  // ✅ Handle "Find Senior Help" Intent
   if (intentName.toLowerCase().includes("senior")) {
     const companyName = parameters.company?.trim(); // Extract company name
 
@@ -246,14 +245,12 @@ app.post('/webhook', async (req, res) => {
     try {
       console.log(`🔹 Searching for seniors who interned at: ${companyName}`);
 
-      // Query MongoDB for seniors who interned at the specified company
       const seniors = await Senior.find({ internshipCompany: new RegExp(companyName, 'i') });
 
       if (seniors.length === 0) {
         return res.json({ fulfillmentText: `No seniors found who interned at ${companyName}.` });
       }
 
-      // Format response
       let responseText = `✅ Seniors who interned at ${companyName}:\n`;
       seniors.forEach(senior => {
         responseText += `👨‍💻 *${senior.fullName}* (${senior.course}, Batch ${senior.startYear})\n📩 Email: ${senior.email}\n\n`;
@@ -266,7 +263,6 @@ app.post('/webhook', async (req, res) => {
     }
   }
 
-  // ✅ Default Response if Intent Not Handled
   return res.json({ fulfillmentText: 'Intent not handled.' });
 });
 
