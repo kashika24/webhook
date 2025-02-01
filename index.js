@@ -229,12 +229,14 @@ const Senior = mongoose.model('Senior', SeniorSchema);
 app.post('/webhook', async (req, res) => {
   const intentName = req.body.queryResult.intent.displayName;
   const parameters = req.body.queryResult.parameters;
+  console.log('🔹 Full Webhook Request:', JSON.stringify(req.body, null, 2));
+
 
   console.log(`🔹 Intent Received: ${intentName}`);
   console.log(`🔹 Parameters Received:`, parameters);
 
   // ✅ Handle "Find Senior Help" Intent
-  if (intentName === 'Find Senior Help') {
+  if (intentName.toLowerCase().includes("senior")) {
     const companyName = parameters.company?.trim(); // Extract company name
 
     if (!companyName) {
