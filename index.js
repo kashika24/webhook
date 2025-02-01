@@ -8,10 +8,7 @@ require('dotenv').config();
 app.use(express.json());
 
 // ✅ Connect to MongoDB (Replace `<your_mongodb_connection_string>` with actual URL)
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose.connect(process.env.MONGODB_URI)
 .then(() => console.log('Connected to MongoDB'))
 .catch(err => console.error('MongoDB Connection Error:', err));
 
