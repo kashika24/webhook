@@ -205,6 +205,11 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.send('Webhook Server is Live!');
+});
+
+
 // ✅ Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Connected to MongoDB'))
@@ -237,10 +242,9 @@ app.post('/webhook', async (req, res) => {
 
   if (intentName.toLowerCase().includes("senior")) {
     const companyName = parameters.company?.trim(); // Extract company name
-
-    if (!companyName) {
-      return res.json({ fulfillmentText: "Please specify a company name to find seniors." });
-    }
+  if (!companyName || companyName === "") {
+    return res.json({ fulfillmentText: "Please specify a company name to find seniors." });
+  }
 
     try {
       console.log(`🔹 Searching for seniors who interned at: ${companyName}`);
@@ -268,6 +272,7 @@ app.post('/webhook', async (req, res) => {
 
 // ✅ Start Server
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
   console.log(`✅ Webhook server is running on port ${PORT}`);
 });
