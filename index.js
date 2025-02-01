@@ -124,40 +124,68 @@ app.post('/webhook', async (req, res) => {
   //   res.json({ fulfillmentText: "Intent not handled." });
   // }
 
-  if (intentName === "Senior Help") {
-    const company = parameters.company;  // Company the student is asking for
-    const experienceType = parameters.experience_type;  // 'internship' or 'full-time'
+  // if (intentName === "Senior Help") {
+  //   const company = parameters.company;  // Company the student is asking for
+  //   const experienceType = parameters.experience_type;  // 'internship' or 'full-time'
 
-    console.log(`Searching for seniors from ${company} with ${experienceType} experience`);
+  //   console.log(`Searching for seniors from ${company} with ${experienceType} experience`);
+
+  //   try {
+  //     let query = {};
+
+  //     if (experienceType.toLowerCase() === "internship") {
+  //       query = { internshipCompany: { $regex: new RegExp(company, "i") } };
+  //     } else if (experienceType.toLowerCase() === "full-time") {
+  //       query = { fullTimeCompany: { $regex: new RegExp(company, "i") } };
+  //     }
+
+  //     const seniors = await Senior.find(query);
+
+  //     if (seniors.length > 0) {
+  //       let responseText = `👨‍💻 Here are seniors with ${experienceType} experience at ${company}:\n\n`;
+
+  //       seniors.forEach(senior => {
+  //         responseText += `🔹 *${senior.fullName}* (${senior.course}, Batch ${senior.startYear})\n📩 Contact: ${senior.email}\n\n`;
+  //       });
+
+  //       res.json({ fulfillmentText: responseText });
+  //     } else {
+  //       res.json({ fulfillmentText: `Sorry, no seniors found for ${company} with ${experienceType} experience.` });
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching senior data:', error);
+  //     res.json({ fulfillmentText: "Sorry, something went wrong while fetching senior details. Please try again later." });
+  //   }
+  // } else {
+  //   res.json({ fulfillmentText: "Intent not handled." });
+  // }
+
+  if (intentName === 'Find Senior Help') {
+    const companyName = parameters.company; // Extracted from Dialogflow
+
+    if (!companyName) {
+      return res.json({ fulfillmentText: "Please specify the company name." });
+    }
 
     try {
-      let query = {};
+      // Fetch seniors who interned at the requested company
+      const seniors = await Senior.find({ internshipCompany: companyName });
 
-      if (experienceType.toLowerCase() === "internship") {
-        query = { internshipCompany: { $regex: new RegExp(company, "i") } };
-      } else if (experienceType.toLowerCase() === "full-time") {
-        query = { fullTimeCompany: { $regex: new RegExp(company, "i") } };
+      if (seniors.length === 0) {
+        return res.json({ fulfillmentText: `No seniors found who interned at ${companyName}.` });
       }
 
-      const seniors = await Senior.find(query);
+      // Create response
+      let seniorList = seniors.map(senior => `- ${senior.fullName}, Course: ${senior.course}, Start Year: ${senior.startYear}`).join('\n');
+      const fulfillmentText = `Here are some seniors who interned at ${companyName}:\n${seniorList}`;
 
-      if (seniors.length > 0) {
-        let responseText = `👨‍💻 Here are seniors with ${experienceType} experience at ${company}:\n\n`;
-
-        seniors.forEach(senior => {
-          responseText += `🔹 *${senior.fullName}* (${senior.course}, Batch ${senior.startYear})\n📩 Contact: ${senior.email}\n\n`;
-        });
-
-        res.json({ fulfillmentText: responseText });
-      } else {
-        res.json({ fulfillmentText: `Sorry, no seniors found for ${company} with ${experienceType} experience.` });
-      }
+      res.json({ fulfillmentText });
     } catch (error) {
-      console.error('Error fetching senior data:', error);
-      res.json({ fulfillmentText: "Sorry, something went wrong while fetching senior details. Please try again later." });
+      console.error('Error fetching seniors:', error);
+      res.json({ fulfillmentText: 'Sorry, I couldn’t fetch the information right now. Please try again later.' });
     }
   } else {
-    res.json({ fulfillmentText: "Intent not handled." });
+    res.json({ fulfillmentText: 'Intent not handled.' });
   }
 
 });
