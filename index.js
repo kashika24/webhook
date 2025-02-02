@@ -209,6 +209,11 @@ app.get('/', (req, res) => {
   res.send('Webhook Server is Live!');
 });
 
+mongoose.connection.on('connected', () => {
+  console.log('MongoDB is connected');
+});
+
+
 
 // ✅ Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
@@ -250,6 +255,7 @@ app.post('/webhook', async (req, res) => {
       console.log(`🔹 Searching for seniors who interned at: ${companyName}`);
 
       const seniors = await Senior.find({ internshipCompany: new RegExp(companyName, 'i') });
+      console.log(seniors);
 
       if (seniors.length === 0) {
         return res.json({ fulfillmentText: `No seniors found who interned at ${companyName}.` });
