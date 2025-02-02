@@ -220,7 +220,7 @@ mongoose.connection.on('connected', () => {
 
 // ✅ Connect to MongoDB
 const uri = process.env.MONGODB_URI || 'mongodb+srv://kashi:flyh80166@cluster0.htrsv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
-mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(uri)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
