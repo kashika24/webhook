@@ -206,6 +206,8 @@ require('dotenv').config({ path: '.env' });
 const app = express();
 app.use(express.json());
 
+
+
 app.get('/', (req, res) => {
   res.send('Webhook Server is Live!');
 });
@@ -217,7 +219,8 @@ mongoose.connection.on('connected', () => {
 
 
 // ✅ Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
+const uri = process.env.MONGODB_URI || 'mongodb+srv://kashi:flyh80166@cluster0.htrsv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
